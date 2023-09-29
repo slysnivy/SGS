@@ -19,6 +19,24 @@ BROWN = (150, 75, 0)
 DARK_GREY = (52, 52, 52)
 
 
+class Memory:
+    """
+    Class used to store data across game instances
+    """
+    def __init__(self, width, height):
+        self.res_width = width
+        self.res_height = height
+        self.music = None
+
+    def load_game(self):
+        """ Load previous game instance, usually from a text_file"""
+        pass
+
+    def load_scenes(self):
+        """ Load all scenes from a text file"""
+        pass
+
+
 class Text:
     """
     Class used to simplify text creation for pygame
@@ -81,13 +99,14 @@ class Music:
     Also responsible for music volume and music switching.
     """
 
-    def __init__(self, perc_vol):
+    def __init__(self, perc_vol, music_folder, width, height):
         self.music_tracks = []  # Put file_name for music here
+        # todo: file dir
         self.end = pygame.USEREVENT + 0    # Unique event, for when music ends
         pygame.mixer.music.set_endevent(pygame.USEREVENT + 0)
         # Everytime music ends, return the event
 
-        self.file_path = "put_file_path_for_music"    # File path for audio
+        self.folder_path = music_folder   # Folder path for audio
 
         self.current_track_index = 0    # Everything but the main menu theme
 
@@ -97,15 +116,21 @@ class Music:
         self.max_vol = 1 * self.perc_vol / 100   # Max volume possible for music
         # Change 1 value for changing music
 
-        """pygame.mixer.music.load(self.file_path + self.music_tracks[0])"""
+        self.res_width = width
+        self.res_height = height
+
+        """pygame.mixer.music.load(self.folder_path + self.music_tracks[0])"""
         #   Load this music up upon loading
 
         pygame.mixer.music.set_volume(self.max_vol)     # Set to max for now
-        #pygame.mixer.music.play(-1)     # Start with this song and play forever
-
-        self.music_text = Text("PLAYING: " +
-                               str(self.music_tracks[self.current_track_index]),
-                               (1080 / 2, 556), 20, "impact", WHITE, None)
+        # pygame.mixer.music.play(-1)
+        # Start with this song and play forever
+        if 0 < len(self.music_tracks):
+            self.music_text = Text("PLAYING: " +
+                                   str(self.music_tracks[self.current_track_index]),
+                                   (self.res_width / 2, self.res_height -
+                                    (self.res_height / 10)), 20,
+                                   "impact", WHITE, None)
         self.text_timer = pygame.time.get_ticks()
         # Display what's currently playing
 
@@ -122,10 +147,12 @@ class Music:
         # Update the music display text
         self.music_text = Text("PLAYING: " +
                                str(self.music_tracks[self.current_track_index]),
-                               (1080 / 2, 556), 20, "impact", WHITE, None)
+                               (self.res_width / 2, self.res_height -
+                                (self.res_height / 10)),
+                               20, "impact", WHITE, None)
 
         # Load the selected track
-        pygame.mixer.music.load(self.file_path +
+        pygame.mixer.music.load(self.folder_path +
                                 (self.music_tracks[self.current_track_index]))
 
         # Set the volume
@@ -146,10 +173,12 @@ class Music:
         # Update the music display text
         self.music_text = Text("PLAYING: " +
                                str(self.music_tracks[self.current_track_index]),
-                               (1080 / 2, 556), 20, "impact", WHITE, None)
+                               (self.res_width / 2, self.res_height -
+                                (self.res_height / 10)),
+                               20, "impact", WHITE, None)
 
         # Load the selected track
-        pygame.mixer.music.load(self.file_path +
+        pygame.mixer.music.load(self.folder_path +
                                 (self.music_tracks[self.current_track_index]))
 
         # Set the volume
@@ -247,12 +276,9 @@ class Program:
     """
     def __init__(self, width, height) -> None:
         self.running = True     # Determines if the game is running
-        """self.memory = Memory(width / 1080, height / 576)     # Initialize game memory
-        self.memory.load_all_levels()   # Load all levels from different files
+        self.memory = Memory(width, height)     # Initialize game memory
 
-        self.memory.init_replays()
-        self.memory.load_save()
-        self.memory.music = Music(self.memory.total_music_per)"""
+        self.memory.music = Music(100, "example_file_path", width, height)
 
     def run(self, width, height, current_scene):
         """
@@ -275,7 +301,7 @@ class Program:
 
         Finally, this is where FPS is set and where the display is updated.
         """
-        #self.memory.screen = pygame.display.set_mode([width, height])
+        # self.memory.screen = pygame.display.set_mode([width, height])
         screen = pygame.display.set_mode([width, height])  # Set screen size
 
         pygame.scrap.init()
@@ -292,7 +318,7 @@ class Program:
             for event in pygame.event.get():    # Collect all key presses
                 # Quit condition if you press the X on the top right
                 if event.type == pygame.QUIT:
-                    #self.memory.write_save()
+                    # self.memory - write to your save here
                     self.running = False    # Stop running this loop
                     pygame.mixer.music.stop()   # Stop the music
                     scene.run_scene = False     # Tell scene to stop running
@@ -305,7 +331,7 @@ class Program:
 
             # Stop the game using other conditions (running, but scene says off)
             if self.running and not scene.run_scene:
-                #self.memory.write_save()
+                # self.memory - write to your save here
                 self.running = False    # Stop running this loop
                 pygame.mixer.music.stop()   # Stop the music
                 scene.close_game()      # Tell scene to shut off
@@ -336,17 +362,19 @@ if __name__ == "__main__":
     fps = pygame.time.Clock()   # Initialize the frame rate
 
     # Alter these values to change the resolution
-    game_width = 1080
-    game_height = 576
+    game_width = 1280
+    game_height = 720
 
     file_path = "put_icon_file_path_here"
     """pygame.display.set_caption("display_window") # game window caption
     icon = pygame.image.load(file_path + "file_image_name") # loading image
     default_icon_image_size = (32, 32) # reducing size of image
-    icon = pygame.transform.scale(icon, default_icon_image_size) # scaling image correctly
+    icon = pygame.transform.scale(icon, default_icon_image_size) 
+    # scaling image correctly
     pygame.display.set_icon(icon) # game window icon"""
 
-    start_game = Program(game_width, game_height)      # Initialize running the game with Program
+    start_game = Program(game_width, game_height)
+    # Initialize running the game with Program
     start_scene = Scene()
     # Initialize the first scene/starting scene shown to the player
     start_game.run(game_width, game_height, start_scene)  # Run the game loop
