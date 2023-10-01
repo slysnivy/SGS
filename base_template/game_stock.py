@@ -1,5 +1,6 @@
 import pygame
 import random
+import os
 
 DARK_RED = (139, 0, 0)
 YELLOW = (235, 195, 65)
@@ -101,7 +102,9 @@ class Music:
 
     def __init__(self, perc_vol, music_folder, width, height):
         self.music_tracks = []  # Put file_name for music here
-        # todo: file dir
+        music_files = os.listdir("songs/")
+        for each_song in music_files:
+            self.music_tracks += [each_song]
         self.end = pygame.USEREVENT + 0    # Unique event, for when music ends
         pygame.mixer.music.set_endevent(pygame.USEREVENT + 0)
         # Everytime music ends, return the event
