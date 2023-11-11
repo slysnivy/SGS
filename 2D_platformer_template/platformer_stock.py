@@ -253,7 +253,8 @@ class PlayLevel(Scene):
         # Put pygame objects that need rendering into here
         self.platforms = [
                         pygame.Rect(0, 566, 1080, 10),
-                        pygame.Rect(510, 544, 60, 22)
+                        pygame.Rect(510, 544, 60, 22),
+                        pygame.Rect(0, 522, 100, 10)
             ]  # All platforms for that level (collision)
         self.death_zones = []  # All deaths for that level (death condition)
         self.win_zones = []  # All win areas for that level (win condition)
@@ -304,13 +305,15 @@ class PlayLevel(Scene):
         self.res_height = height
         self.res_width = width
 
+        self.held_delay = pygame.time.get_ticks()
+
     def input(self, pressed, held):
         for every_key in pressed:
             # Player movement bound to the middle of the screen
-            if every_key is pygame.K_a:
-                self.player.xpos += 4 * self.res_width
-            if every_key is pygame.K_d:
-                self.player.xpos -= 4 * self.res_width
+            if every_key is pygame.K_a and not self.player.disable_left:
+                self.update_plat(-4 * self.res_width)
+            if every_key is pygame.K_d and not self.player.disable_right:
+                self.update_plat(-4 * self.res_width)
 
             # Pressing/tapping and not holding jump key to jump
             if every_key in [pygame.K_w, pygame.K_UP, pygame.K_SPACE] and not \
@@ -360,10 +363,16 @@ class PlayLevel(Scene):
             self.player.jumps += 1  # Add to a jump counter
             self.jump_timer = pygame.time.get_ticks()  # Reset jump timer
 
-        if held[pygame.K_a]:
-            self.player.xpos += 4 * self.res_width
-        if held[pygame.K_d]:
-            self.player.xpos -= 4 * self.res_width
+        if held[pygame.K_a] and \
+                10 < pygame.time.get_ticks() - self.held_delay and \
+                not self.player.disable_left:
+            self.update_plat(4 * self.res_width)
+            self.held_delay = pygame.time.get_ticks()
+        if held[pygame.K_d] and \
+                10 < pygame.time.get_ticks() - self.held_delay and \
+                not self.player.disable_right:
+            self.update_plat(-4 * self.res_width)
+            self.held_delay = pygame.time.get_ticks()
 
     def update(self):
         # Failsafe if player isn't rendered but level starts
@@ -429,13 +438,16 @@ class PlayLevel(Scene):
         self.player.render(screen)
         self.render_text(screen)
 
+    def update_plat(self, move):
+        for plat in self.platforms:
+            plat.x += move
+
     def render_level(self, screen):
-        x_factor = self.player.xpos - (1080 / 2) + self.player.width
         """ This function will be altered in the child class"""
         for plat in self.platforms:
-            if 0 <= plat.x + plat.width + x_factor <= 1080 or \
-                    0 <= plat.x + x_factor <= 1080:
-                pygame.draw.rect(screen, BLACK, [plat.x + x_factor,
+            if 0 <= plat.x + plat.width<= 1080 or \
+                    0 <= plat.x <= 1080:
+                pygame.draw.rect(screen, BLACK, [plat.x,
                                                  plat.y,
                                                  plat.width,
                                                  plat.height])
@@ -526,6 +538,9 @@ class Player:
         self.left_x = None
         self.right_x = None
 
+        self.disable_left = False
+        self.disable_right = False
+
     def update_detection(self):
         """
         Move the player by 4 units in the specific direction, multiplied
@@ -549,15 +564,15 @@ class Player:
         self.jump()"""
 
         # Update collision logic position in real time with the player position
-        self.collide_rect.x = self.xpos - (30 * self.res_width)
+        self.collide_rect.x = ((1080 / 2)) - (30 * self.res_width)
         self.collide_rect.y = self.ypos - (30 * self.res_height)
-        self.left_col.x = self.xpos - self.width - (10 * self.res_width)
+        self.left_col.x = ((1080 / 2)) - self.width - (10 * self.res_width)
         self.left_col.y = self.ypos + (self.res_height * 1)
-        self.right_col.x = self.xpos + self.width
+        self.right_col.x = ((1080 / 2)) + self.width
         self.right_col.y = self.ypos + (self.res_height * 1)
-        self.top_col.x = self.xpos
+        self.top_col.x = ((1080 / 2))
         self.top_col.y = self.ypos - self.height - (10 * self.res_height)
-        self.bot_col.x = self.xpos
+        self.bot_col.x = ((1080 / 2))
         self.bot_col.y = self.ypos + self.height
 
     def jump(self):
@@ -584,14 +599,14 @@ class Player:
 
     def render(self, screen):
         # Visualize collision rect, uncomment to see
-        """pygame.draw.rect(screen, (55, 230, 50), self.collide_rect)   # area
+        pygame.draw.rect(screen, (55, 230, 50), self.collide_rect)   # area
         pygame.draw.rect(screen, BLUE, self.left_col)  # left
         pygame.draw.rect(screen, BLUE, self.right_col)  # right
         pygame.draw.rect(screen, BLUE, self.top_col)  # top
         pygame.draw.rect(screen, BLUE, self.bot_col)  # bottom"""
 
         self.square_render = pygame.draw.rect(screen, self.color, [((1080 / 2)) * self.res_width,
-                                                                   self.ypos,
+                                                                   (self.ypos),
                                                                    self.width,
                                                                    self.height])
         # Update the square render/rect with the position (x and y)
@@ -696,6 +711,9 @@ class Player:
         left_collision = self.collide_rect.collidelistall(object_list)
         right_collision = self.collide_rect.collidelistall(object_list)
 
+        self.disable_right = False
+        self.disable_left = False
+
         all_xl = []
         # Left side collision, going left to turn right
         for lcollide_id in left_collision:
@@ -715,7 +733,7 @@ class Player:
                     self.left_col.colliderect(object_list[lcollide_id]) and \
                     collide_y < self.ypos + self.height and \
                     self.ypos < collide_y + collide_height:
-
+                self.disable_left = True
                 if self.xpos < collide_x + collide_width and \
                         not self.top_col.colliderect(object_list[lcollide_id]):
                     self.xpos = collide_x + collide_width
@@ -738,6 +756,7 @@ class Player:
                     self.right_col.colliderect(object_list[rcollide_id]) and \
                     collide_y < self.ypos + self.height and \
                     self.ypos < collide_y + collide_height:
+                self.disable_right = True
 
                 if collide_x < self.xpos + self.width and \
                         not self.top_col.colliderect(object_list[rcollide_id]):
@@ -789,7 +808,7 @@ class Program:
 
     def __init__(self) -> None:
         self.running = True  # Determines if the game is running
-        """self.memory = Memory(width / 1080, height / 576) 
+        """self.memory = Memory(width / 1080, height / 576)
         # Initialize game memory
         self.memory.load_all_levels()   # Load all levels from different files
 
@@ -853,9 +872,9 @@ class Program:
                 scene.update()  # Call to dynamically use/update/check changes
                 scene.render(screen)  # Visually render desired graphics
                 scene = scene.this_scene
-                """This line is important to allow changing scenes (if 
-                this_scene is different like using 
-                scene.change_scene(next_scene). Otherwise, scene will not be 
+                """This line is important to allow changing scenes (if
+                this_scene is different like using
+                scene.change_scene(next_scene). Otherwise, scene will not be
                 changed and will continue being this scene (same memory
                 address, no change)."""
 
@@ -880,7 +899,7 @@ if __name__ == "__main__":
     """pygame.display.set_caption("display_window") # game window caption
     icon = pygame.image.load(file_path + "file_image_name") # loading image
     default_icon_image_size = (32, 32) # reducing size of image
-    icon = pygame.transform.scale(icon, default_icon_image_size) 
+    icon = pygame.transform.scale(icon, default_icon_image_size)
     # scaling image correctly
     pygame.display.set_icon(icon) # game window icon"""
 
