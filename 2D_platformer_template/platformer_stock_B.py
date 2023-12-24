@@ -252,17 +252,17 @@ class PlayLevel(Scene):
         Scene.__init__(self)
         # Put pygame objects that need rendering into here
         self.platforms = [
-                        pygame.Rect(0, 566, 1080, 10),
-                        pygame.Rect(510, 544, 60, 22),
-                        pygame.Rect(0, 522, 100, 10)
-            ]  # All platforms for that level (collision)
+            pygame.Rect(0, 566, 1080, 10),
+            pygame.Rect(510, 544, 60, 22),
+            pygame.Rect(0, 522, 100, 10)
+        ]  # All platforms for that level (collision)
         self.death_zones = []  # All deaths for that level (death condition)
         self.win_zones = []  # All win areas for that level (win condition)
         self.respawn_zones = []  # Respawn area for the player
 
         # Render these objects
         self.render_objects = self.platforms + self.death_zones + \
-                                self.win_zones + self.respawn_zones
+                              self.win_zones + self.respawn_zones
 
         self.x_spawn = x_spawn * width  # x player spawn
         self.y_spawn = y_spawn * height  # y player spawn
@@ -311,9 +311,9 @@ class PlayLevel(Scene):
         for every_key in pressed:
             # Player movement bound to the middle of the screen
             if every_key is pygame.K_a and not self.player.disable_left:
-                self.update_plat_x(-1 * self.player.collision_wall(self.platforms))
+                self.update_plat_x(self.player.smart_left(self.platforms))
             if every_key is pygame.K_d and not self.player.disable_right:
-                self.update_plat_x(self.player.collision_wall(self.platforms))
+                self.update_plat_x(self.player.smart_right(self.platforms))
 
             # Pressing/tapping and not holding jump key to jump
             if every_key in [pygame.K_w, pygame.K_UP, pygame.K_SPACE] and not \
@@ -323,7 +323,7 @@ class PlayLevel(Scene):
                     150 <= pygame.time.get_ticks() - self.jump_timer:
                 self.player.jump_ability = True  # Allow player to jump
                 self.player.jump_boost = self.player.max_jump  # Setup jump
-                #self.player.jump_sound_1.play()  # Play jump sound
+                # self.player.jump_sound_1.play()  # Play jump sound
                 self.player.jumps += 1  # Add to a jump counter
                 self.jump_timer = pygame.time.get_ticks()  # Reset jump timer
 
@@ -359,19 +359,19 @@ class PlayLevel(Scene):
                 150 <= pygame.time.get_ticks() - self.jump_timer:
             self.player.jump_ability = True  # Allow player to jump
             self.player.jump_boost = -1 * self.player.max_jump  # Setup jump
-            #self.player.jump_sound_1.play()  # Play jump sound
+            # self.player.jump_sound_1.play()  # Play jump sound
             self.player.jumps += 1  # Add to a jump counter
             self.jump_timer = pygame.time.get_ticks()  # Reset jump timer
 
         if held[pygame.K_a] and \
                 10 < pygame.time.get_ticks() - self.held_delay and \
                 not self.player.disable_left:
-            self.update_plat_x(-1 * self.player.collision_wall(self.platforms))
+            self.update_plat_x(self.player.smart_left(self.platforms))
             self.held_delay = pygame.time.get_ticks()
         if held[pygame.K_d] and \
                 10 < pygame.time.get_ticks() - self.held_delay and \
                 not self.player.disable_right:
-            self.update_plat_x(self.player.collision_wall(self.platforms))
+            self.update_plat_x(self.player.smart_right(self.platforms))
             self.held_delay = pygame.time.get_ticks()
 
     def update(self):
@@ -388,7 +388,7 @@ class PlayLevel(Scene):
             # Check if player collided with death zones (returns 1 or 0)
             self.deaths += self.player.death(self.death_zones)
             self.player.collision_plat(self.platforms)  # Top and bottom coll
-            self.player.collision_wall(self.platforms)  # Side collision
+            self.player.collision_wall(self.platforms)
             self.player.update_detection()  # Player movement
 
         """Respawn for square players, reset spawn position, set direction
@@ -420,7 +420,7 @@ class PlayLevel(Scene):
                 self.respawn_zones)
             # Set new x and y default spawns
             self.x_spawn = self.respawn_zones[respawn_block].x + (
-                        self.respawn_zones[respawn_block].width / 2) - 5
+                    self.respawn_zones[respawn_block].width / 2) - 5
             self.y_spawn = self.respawn_zones[respawn_block].y + (
                     self.respawn_zones[respawn_block].height / 2) - 5
 
@@ -449,9 +449,9 @@ class PlayLevel(Scene):
         """ This function will be altered in the child class"""
         for plat in self.platforms:
             if (0 <= plat.x + plat.width <= 1080 or
-                    0 <= plat.x <= 1080) and \
-                (0 <= plat.y + plat.height <= 576 or
-                    0 <= plat.y <= 576):
+                0 <= plat.x <= 1080) and \
+                    (0 <= plat.y + plat.height <= 576 or
+                     0 <= plat.y <= 576):
                 pygame.draw.rect(screen, BLACK, [plat.x,
                                                  plat.y,
                                                  plat.width,
@@ -488,7 +488,7 @@ class Player:
         difficuty_value
         ]
         """
-        self.xpos = x_spawn # Current x_position, initialized as spawn
+        self.xpos = x_spawn  # Current x_position, initialized as spawn
         self.ypos = y_spawn  # Current y_position, initialized as spawn
         self.width = math.ceil(width * res_width)  # Current width, always 10
         self.height = math.ceil(
@@ -507,9 +507,9 @@ class Player:
         self.gravity_counter = self.max_gravity  # Counter for gravity loop
 
         sound_path = "file_path"
-        #self.jump_sound_1 = pygame.mixer.Sound(sound_path + "jump_file")
+        # self.jump_sound_1 = pygame.mixer.Sound(sound_path + "jump_file")
         # Jump sound for player
-        #self.jump_sound_1.set_volume(0.1 * (jump_vol / 100))  # out of 1 or 100%
+        # self.jump_sound_1.set_volume(0.1 * (jump_vol / 100))  # out of 1 or 100%
         # Jump volume for the player, set at 0.1 out of 1, or 10%
 
         # Get location and info of surrounding blocks
@@ -582,7 +582,7 @@ class Player:
 
     def jump(self):
         # Jump that will change the player's y position in the game loop
-        #print(self.jump_ability, self.jump_boost)
+        # print(self.jump_ability, self.jump_boost)
         if self.jump_ability and 0 <= self.jump_boost:
             jump_factor = ((self.jump_boost ** 2) * 0.004)
             if self.jump_y is not None and \
@@ -612,10 +612,11 @@ class Player:
         pygame.draw.rect(screen, BLUE, self.top_col)  # top
         pygame.draw.rect(screen, BLUE, self.bot_col)  # bottom"""
 
-        self.square_render = pygame.draw.rect(screen, self.color, [((1080 / 2)) * self.res_width,
-                                                                   (576 / 2) * self.res_height,
-                                                                   self.width,
-                                                                   self.height])
+        self.square_render = pygame.draw.rect(screen, self.color,
+                                              [((1080 / 2)) * self.res_width,
+                                               (576 / 2) * self.res_height,
+                                               self.width,
+                                               self.height])
         # Update the square render/rect with the position (x and y)
 
     def collision_plat(self, object_list: [pygame.Rect]):
@@ -665,9 +666,6 @@ class Player:
                 self.jump_ability = True
                 self.gravity_counter = self.max_gravity
 
-                if collide_y < self.ypos + self.height:
-                    self.ypos = collide_y - self.height
-
         if 0 < len(all_y):
             self.grav_y = min(all_y)
         else:
@@ -703,24 +701,31 @@ class Player:
                 self.jump_boost = -1
                 self.enable_gravity = True
 
-                if (576 / 2) < collide_y + collide_height and \
-                        (1080 / 2) < collide_x + collide_width and \
-                        collide_x < (1080 / 2) + self.width:
-                    self.ypos = collide_y + collide_height
-
         if 0 < len(all_yheight):
             self.jump_y = max(all_yheight)
         else:
             self.jump_y = None
 
     def collision_wall(self, object_list: [pygame.Rect]):
+        self.disable_left = False
+        self.disable_right = False
+
         # New collision logic:
         left_collision = self.collide_rect.collidelistall(object_list)
         right_collision = self.collide_rect.collidelistall(object_list)
 
-        self.disable_right = False
-        self.disable_left = False
+        self.left_collision(object_list, left_collision)
+        self.right_collision(object_list, right_collision)
 
+    def smart_left(self, object_list):
+        left_collision = self.collide_rect.collidelistall(object_list)
+        return self.left_collision(object_list, left_collision)
+
+    def smart_right(self, object_list):
+        right_collision = self.collide_rect.collidelistall(object_list)
+        return self.right_collision(object_list, right_collision)
+
+    def left_collision(self, object_list, left_collision):
         all_xl = []
         # Left side collision, going left to turn right
         for lcollide_id in left_collision:
@@ -732,46 +737,59 @@ class Player:
             if self.left_col.colliderect(object_list[lcollide_id]) and \
                     not self.top_col.colliderect(object_list[lcollide_id]) and \
                     not self.bot_col.colliderect(object_list[lcollide_id]) and \
-                    collide_x + collide_width < (1080 / 2):
+                    collide_x + collide_width < self.xpos:
                 all_xl += [collide_x + collide_width]
 
-            if lcollide_id != -1 and self.square_render.colliderect(
-                    object_list[lcollide_id]) and \
+            if lcollide_id != -1 and \
                     self.left_col.colliderect(object_list[lcollide_id]) and \
-                    collide_y < (576 / 2) + self.height and \
-                    (576 / 2) < collide_y + collide_height:
+                    ((collide_x + collide_width) -
+                     self.xpos + (self.width / 2)) * -1 < 4:
+                return ((collide_x + collide_width) -
+                        self.xpos + (self.width / 2)) * -1
+            if lcollide_id != -1 and (1080 / 2) <= collide_x + collide_width and \
+                    self.left_col.colliderect(object_list[lcollide_id]) and \
+                    collide_y < self.ypos + self.height and \
+                    self.ypos < collide_y + collide_height:
                 self.disable_left = True
-
-        all_xr = []
-        # Right side collision, going right to turn left
-        for rcollide_id in right_collision:
-            collide_x = object_list[rcollide_id].x
-            collide_y = object_list[rcollide_id].y
-            collide_height = object_list[rcollide_id].height
-
-            if self.right_col.colliderect(object_list[rcollide_id]) and \
-                    not self.top_col.colliderect(object_list[rcollide_id]) and \
-                    not self.bot_col.colliderect(object_list[rcollide_id]) and \
-                    (1080 / 2) + self.width < collide_x:
-                all_xr += [collide_x]
-
-            if rcollide_id != -1 and self.square_render.colliderect(
-                    object_list[rcollide_id]) and \
-                    self.right_col.colliderect(object_list[rcollide_id]) and \
-                    collide_y < (576 / 2) + self.height and \
-                    (576 / 2) < collide_y + collide_height:
-                self.disable_right = True
 
         if 0 < len(all_xl):
             self.left_x = max(all_xl)
         else:
             self.left_x = None
+
+        return 4
+
+    def right_collision(self, object_list, right_collision):
+        all_xr = []
+        # Right side collision, going right to turn left
+        for rcollide_id in right_collision:
+            collide_x = object_list[rcollide_id].x
+            collide_y = object_list[rcollide_id].y
+            collide_width = object_list[rcollide_id].width
+            collide_height = object_list[rcollide_id].height
+
+            if self.right_col.colliderect(object_list[rcollide_id]) and \
+                    not self.top_col.colliderect(object_list[rcollide_id]) and \
+                    not self.bot_col.colliderect(object_list[rcollide_id]) and \
+                    self.xpos + self.width < collide_x:
+                all_xr += [collide_x]
+
+            if rcollide_id != -1 and \
+                    self.right_col.colliderect(object_list[rcollide_id]) and \
+                    -4 < self.xpos + self.width - (self.width / 2) - collide_x:
+                return self.xpos + self.width - (self.width / 2) - collide_x
+            if rcollide_id != -1 and collide_x <= (1080 / 2) + self.width and \
+                    self.right_col.colliderect(object_list[rcollide_id]) and \
+                    collide_y < self.ypos + self.height and \
+                    self.ypos < collide_y + collide_height:
+                self.disable_right = True
+
         if 0 < len(all_xr):
             self.right_x = min(all_xr)
         else:
             self.right_x = None
 
-        return -4 * self.res_width
+        return -4
 
     def gravity(self):
         # fix turning off gravity
@@ -794,8 +812,12 @@ class Player:
                 self.jump_ability = True
                 self.gravity_counter = self.max_gravity
                 gravity_y = (576 / 2) - (self.grav_y - self.height)
-
-        return gravity_y * -1
+        if 0 < gravity_y:
+            return gravity_y * -1
+        elif 0 < gravity_y:
+            return gravity_y
+        else:
+            return 0
 
     def death(self, death_list: [pygame.Rect]):
         collide_id = self.square_render.collidelist(death_list)
@@ -886,7 +908,7 @@ class Program:
                 """if 0 != scene.level_id:
                     self.memory.music.transition_music()"""
 
-            fps.tick(120)  # 120 frames per second
+            fps.tick(20)  # 120 frames per second
             pygame.display.update()  # Update the visual output dynamically
 
 
