@@ -908,7 +908,7 @@ class Program:
                 """if 0 != scene.level_id:
                     self.memory.music.transition_music()"""
 
-            fps.tick(20)  # 120 frames per second
+            fps.tick(120)  # 120 frames per second
             pygame.display.update()  # Update the visual output dynamically
 
 
