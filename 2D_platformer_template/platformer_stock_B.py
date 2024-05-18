@@ -814,7 +814,7 @@ class Player:
                 gravity_y = (576 / 2) - (self.grav_y - self.height)
         if 0 < gravity_y:
             return gravity_y * -1
-        elif 0 < gravity_y:
+        elif gravity_y < 0:
             return gravity_y
         else:
             return 0
