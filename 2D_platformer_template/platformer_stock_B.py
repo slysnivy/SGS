@@ -1,3 +1,4 @@
+
 import pygame
 import random
 import math
@@ -491,8 +492,7 @@ class Player:
         self.xpos = x_spawn  # Current x_position, initialized as spawn
         self.ypos = y_spawn  # Current y_position, initialized as spawn
         self.width = math.ceil(width * res_width)  # Current width, always 10
-        self.height = math.ceil(
-            height * res_height)  # Current height, always 10
+        self.height = math.ceil(height * res_height)  # Current height, always 10
         self.color = rgb  # Color of player as static constant or tuple
         self.square_render = None  # Pygame.draw rect of the player
         self.alive = False  # If the player is alive (able to move)
@@ -513,25 +513,27 @@ class Player:
         # Jump volume for the player, set at 0.1 out of 1, or 10%
 
         # Get location and info of surrounding blocks
-        self.collide_rect = pygame.Rect(self.xpos - (30 * res_width),
-                                        self.ypos - (30 * res_height),
-                                        self.width + (60 * res_width),
-                                        self.height + (80 * res_height))
+        self.collide_rect = pygame.Rect(self.xpos - self.width,
+                                        self.ypos - self.height,
+                                        self.width * 3,
+                                        self.height * 3)
         # Top, bottom, left and right collision
-        self.left_col = pygame.Rect(self.xpos - self.width - (10 * res_width),
-                                    self.ypos + (res_height * 1),
-                                    self.width + (res_width * 10),
-                                    8 * res_height)
+        self.left_col = pygame.Rect(self.xpos - self.width,
+                                    self.ypos,
+                                    self.width,
+                                    self.height)
         self.right_col = pygame.Rect(self.xpos + self.width,
-                                     self.ypos + (res_height * 1),
-                                     self.width + (10 * res_width),
-                                     8 * res_height)
+                                     self.ypos,
+                                     self.width,
+                                     self.height)
         self.top_col = pygame.Rect(self.xpos,
-                                   self.ypos - self.height - (10 * res_height),
-                                   10 * res_width,
-                                   self.height + (10 * res_height))
-        self.bot_col = pygame.Rect(self.xpos, self.ypos + self.height,
-                                   10 * res_width, self.height * 4)
+                                   self.ypos - self.height,
+                                   self.width,
+                                   self.height)
+        self.bot_col = pygame.Rect(self.xpos,
+                                   self.ypos + self.height,
+                                   self.width,
+                                   self.height)
 
         self.res_width = res_width
         self.res_height = res_height
@@ -552,31 +554,16 @@ class Player:
         by the difficulty factor (max of 1 usually)
         """
         # Move horizontally depending on the direction
-        # todo: move everything but collision updates to the level
-        """Player movement: move_factor = 4 * self.res_width
-
-        if self.left_x is not None and \
-                self.xpos + move_factor <= self.left_x:
-            self.xpos = self.left_x
-        elif self.right_x is not None and \
-                self.right_x <= self.xpos + move_factor + self.width:
-            self.xpos = self.right_x - self.width
-        else:
-            self.xpos += move_factor"""
-
-        """# Gravity and jump functions
-        self.gravity()
-        self.jump()"""
 
         # Update collision logic position in real time with the player position
-        self.collide_rect.x = ((1080 / 2)) - (30 * self.res_width)
-        self.collide_rect.y = (576 / 2) - (30 * self.res_height)
-        self.left_col.x = ((1080 / 2)) - self.width - (10 * self.res_width)
-        self.left_col.y = (576 / 2) + (self.res_height * 1)
+        self.collide_rect.x = ((1080 / 2)) - self.width
+        self.collide_rect.y = (576 / 2) - self.height
+        self.left_col.x = ((1080 / 2)) - self.width
+        self.left_col.y = (576 / 2)
         self.right_col.x = ((1080 / 2)) + self.width
-        self.right_col.y = (576 / 2) + (self.res_height * 1)
+        self.right_col.y = (576 / 2)
         self.top_col.x = ((1080 / 2))
-        self.top_col.y = (576 / 2) - self.height - (10 * self.res_height)
+        self.top_col.y = (576 / 2) - self.height
         self.bot_col.x = ((1080 / 2))
         self.bot_col.y = (576 / 2) + self.height
 
@@ -606,7 +593,7 @@ class Player:
 
     def render(self, screen):
         # Visualize collision rect, uncomment to see
-        """pygame.draw.rect(screen, (55, 230, 50), self.collide_rect)   # area
+        pygame.draw.rect(screen, (55, 230, 50), self.collide_rect)   # area
         pygame.draw.rect(screen, BLUE, self.left_col)  # left
         pygame.draw.rect(screen, BLUE, self.right_col)  # right
         pygame.draw.rect(screen, BLUE, self.top_col)  # top
@@ -814,7 +801,7 @@ class Player:
                 gravity_y = (576 / 2) - (self.grav_y - self.height)
         if 0 < gravity_y:
             return gravity_y * -1
-        elif 0 < gravity_y:
+        elif gravity_y < 0:
             return gravity_y
         else:
             return 0
