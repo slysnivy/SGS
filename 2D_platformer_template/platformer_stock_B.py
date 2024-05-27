@@ -255,7 +255,8 @@ class PlayLevel(Scene):
         self.platforms = [
             pygame.Rect(0, 566, 1080, 10),
             pygame.Rect(510, 544, 60, 22),
-            pygame.Rect(0, 522, 100, 10)
+            pygame.Rect(0, 522, 100, 10),
+            pygame.Rect(-50, 432, 100, 10)
         ]  # All platforms for that level (collision)
         self.death_zones = []  # All deaths for that level (death condition)
         self.win_zones = []  # All win areas for that level (win condition)
@@ -264,7 +265,6 @@ class PlayLevel(Scene):
         # Render these objects
         self.render_objects = self.platforms + self.death_zones + \
                               self.win_zones + self.respawn_zones
-
         self.x_spawn = x_spawn * width  # x player spawn
         self.y_spawn = y_spawn * height  # y player spawn
         self.player = Player(self.x_spawn, self.y_spawn,
@@ -449,10 +449,10 @@ class PlayLevel(Scene):
     def render_level(self, screen):
         """ This function will be altered in the child class"""
         for plat in self.platforms:
-            if (0 <= plat.x + plat.width <= 1080 or
-                0 <= plat.x <= 1080) and \
-                    (0 <= plat.y + plat.height <= 576 or
-                     0 <= plat.y <= 576):
+            if (0 <= plat.x + plat.width <= game_width or
+                0 <= plat.x <= game_width) and \
+                    (0 <= plat.y + plat.height <= game_height or
+                     0 <= plat.y <= game_height):
                 pygame.draw.rect(screen, BLACK, [plat.x,
                                                  plat.y,
                                                  plat.width,
@@ -491,10 +491,14 @@ class Player:
         """
         self.xpos = x_spawn  # Current x_position, initialized as spawn
         self.ypos = y_spawn  # Current y_position, initialized as spawn
-        self.width = math.ceil(width * res_width)  # Current width, always 10
-        self.height = math.ceil(height * res_height)  # Current height, always 10
+        self.width = 48 # Current width, always 10
+        self.height = 48  # Current height, always 10
         self.color = rgb  # Color of player as static constant or tuple
-        self.square_render = None  # Pygame.draw rect of the player
+        self.square_render = pygame.Rect(((1080 / 2)) * res_width,
+                                         (576 / 2) * res_height,
+                                         self.width,
+                                         self.height)  # Rect of the player
+        self.square_render.center = (self.xpos, self.ypos)
         self.alive = False  # If the player is alive (able to move)
         self.freeze = False  # If the player is forced to pause
 
@@ -506,7 +510,7 @@ class Player:
         self.max_gravity = 95  # Limit for the gravity loop to iterate
         self.gravity_counter = self.max_gravity  # Counter for gravity loop
 
-        sound_path = "file_path"
+        asset_path = "assets/"
         # self.jump_sound_1 = pygame.mixer.Sound(sound_path + "jump_file")
         # Jump sound for player
         # self.jump_sound_1.set_volume(0.1 * (jump_vol / 100))  # out of 1 or 100%
@@ -517,23 +521,28 @@ class Player:
                                         self.ypos - self.height,
                                         self.width * 3,
                                         self.height * 3)
+        self.collide_rect.center = (self.xpos, self.ypos)
         # Top, bottom, left and right collision
         self.left_col = pygame.Rect(self.xpos - self.width,
                                     self.ypos,
                                     self.width,
                                     self.height)
+        self.left_col.center = (self.xpos, self.ypos)
         self.right_col = pygame.Rect(self.xpos + self.width,
                                      self.ypos,
                                      self.width,
                                      self.height)
+        self.right_col.center = (self.xpos, self.ypos)
         self.top_col = pygame.Rect(self.xpos,
                                    self.ypos - self.height,
                                    self.width,
                                    self.height)
+        self.top_col.center = (self.xpos, self.ypos)
         self.bot_col = pygame.Rect(self.xpos,
                                    self.ypos + self.height,
                                    self.width,
                                    self.height)
+        self.bot_col.center = (self.xpos, self.ypos)
 
         self.res_width = res_width
         self.res_height = res_height
@@ -556,16 +565,16 @@ class Player:
         # Move horizontally depending on the direction
 
         # Update collision logic position in real time with the player position
-        self.collide_rect.x = ((1080 / 2)) - self.width
-        self.collide_rect.y = (576 / 2) - self.height
-        self.left_col.x = ((1080 / 2)) - self.width
-        self.left_col.y = (576 / 2)
-        self.right_col.x = ((1080 / 2)) + self.width
-        self.right_col.y = (576 / 2)
-        self.top_col.x = ((1080 / 2))
-        self.top_col.y = (576 / 2) - self.height
-        self.bot_col.x = ((1080 / 2))
-        self.bot_col.y = (576 / 2) + self.height
+        self.collide_rect.x = self.square_render.x - self.width
+        self.collide_rect.y = self.square_render.y - self.height
+        self.left_col.x = self.square_render.x - self.width
+        self.left_col.y = self.square_render.y
+        self.right_col.x = self.square_render.x + self.width
+        self.right_col.y = self.square_render.y
+        self.top_col.x = self.square_render.x
+        self.top_col.y = self.square_render.y - self.height
+        self.bot_col.x = self.square_render.x
+        self.bot_col.y = self.square_render.y + self.height
 
     def jump(self):
         # Jump that will change the player's y position in the game loop
@@ -593,17 +602,13 @@ class Player:
 
     def render(self, screen):
         # Visualize collision rect, uncomment to see
-        pygame.draw.rect(screen, (55, 230, 50), self.collide_rect)   # area
+        """pygame.draw.rect(screen, (55, 230, 50), self.collide_rect)   # area
         pygame.draw.rect(screen, BLUE, self.left_col)  # left
         pygame.draw.rect(screen, BLUE, self.right_col)  # right
         pygame.draw.rect(screen, BLUE, self.top_col)  # top
         pygame.draw.rect(screen, BLUE, self.bot_col)  # bottom"""
 
-        self.square_render = pygame.draw.rect(screen, self.color,
-                                              [((1080 / 2)) * self.res_width,
-                                               (576 / 2) * self.res_height,
-                                               self.width,
-                                               self.height])
+        pygame.draw.rect(screen, self.color, self.square_render)
         # Update the square render/rect with the position (x and y)
 
     def collision_plat(self, object_list: [pygame.Rect]):
@@ -619,31 +624,14 @@ class Player:
         all_y = []
         self.enable_gravity = True
         for bcollide_id in bot_collisions:
-            """
-            The if statement checks for if the player is on top of a platform
-            and does so by checking:
-            - If there's any rect that collided (id != -1)
-            - If the player's bottom (self.ypos + self.height) is touching
-                the bottom platform (collide_y <=) or a bit inside the platform
-                (<= collide_y + self.height)
-            - and If the player is within the bounds of the platform.
-
-                The left boundary is collide_x < self.xpos + self.width, or if
-                the right side of the player (self.xpos + self.width) is within 
-                the left side of the platform (collide_x).
-
-                The right boundary is self.xpos < collide_x + collide_width, or
-                if the left side of the player (self. xpos) is within the
-                right side of the platform (collide_x + collide_width)
-            """
             collide_y = object_list[bcollide_id].y
-            if (576 / 2) < collide_y and \
+            if self.ypos + (self.height / 2) < collide_y and \
                     self.bot_col.colliderect(object_list[bcollide_id]) and not \
                     self.left_col.colliderect(object_list[bcollide_id]) and \
                     not self.right_col.colliderect(object_list[bcollide_id]):
                 all_y += [collide_y]
 
-            if ((576 / 2) + self.height == collide_y or
+            if (self.ypos + (self.height / 2) == collide_y or
                 self.square_render.colliderect(object_list[bcollide_id])) and \
                     self.bot_col.colliderect(object_list[bcollide_id]) and not \
                     self.left_col.colliderect(object_list[bcollide_id]) and \
@@ -667,23 +655,17 @@ class Player:
             collide_width = object_list[tcollide_id].width
             collide_height = object_list[tcollide_id].height
 
-            """
-            This if statement checks for if the player's top touches the ceiling
-                or the bottom of a platform:
-                - If there's any rect that collided (id != -1)
-                - 
-            """
             if self.top_col.colliderect(object_list[tcollide_id]) and not \
                     self.left_col.colliderect(object_list[tcollide_id]) and \
                     not self.right_col.colliderect(object_list[tcollide_id]) \
-                    and collide_y + collide_height < (576 / 2):
+                    and collide_y + collide_height < self.ypos - (self.height / 2):
                 all_yheight += [collide_y + collide_height]
 
             if (self.square_render.colliderect(object_list[tcollide_id]) or
-                self.ypos == collide_y + collide_height) and \
+                (self.ypos - (self.height / 2) == collide_y + collide_height) and \
                     self.top_col.colliderect(object_list[tcollide_id]) and not \
                     self.left_col.colliderect(object_list[tcollide_id]) and \
-                    not self.right_col.colliderect(object_list[tcollide_id]):
+                    not self.right_col.colliderect(object_list[tcollide_id])):
                 self.jump_ability = False
                 self.jump_boost = -1
                 self.enable_gravity = True
@@ -724,19 +706,20 @@ class Player:
             if self.left_col.colliderect(object_list[lcollide_id]) and \
                     not self.top_col.colliderect(object_list[lcollide_id]) and \
                     not self.bot_col.colliderect(object_list[lcollide_id]) and \
-                    collide_x + collide_width < self.xpos:
+                    collide_x + collide_width < self.xpos - self.width / 2:
                 all_xl += [collide_x + collide_width]
 
             if lcollide_id != -1 and \
                     self.left_col.colliderect(object_list[lcollide_id]) and \
                     ((collide_x + collide_width) -
-                     self.xpos + (self.width / 2)) * -1 < 4:
+                     (self.xpos - (self.width / 2))) * -1 < 4:
+                self.disable_left = True
                 return ((collide_x + collide_width) -
-                        self.xpos + (self.width / 2)) * -1
-            if lcollide_id != -1 and (1080 / 2) <= collide_x + collide_width and \
+                        (self.xpos - (self.width / 2))) * -1
+            if lcollide_id != -1 and self.xpos - (self.width / 2) <= collide_x + collide_width and \
                     self.left_col.colliderect(object_list[lcollide_id]) and \
-                    collide_y < self.ypos + self.height and \
-                    self.ypos < collide_y + collide_height:
+                    collide_y < self.ypos + (self.height / 2) and \
+                    self.ypos - (self.height / 2) < collide_y + collide_height:
                 self.disable_left = True
 
         if 0 < len(all_xl):
@@ -758,17 +741,18 @@ class Player:
             if self.right_col.colliderect(object_list[rcollide_id]) and \
                     not self.top_col.colliderect(object_list[rcollide_id]) and \
                     not self.bot_col.colliderect(object_list[rcollide_id]) and \
-                    self.xpos + self.width < collide_x:
+                    self.xpos + (self.width / 2) < collide_x:
                 all_xr += [collide_x]
 
             if rcollide_id != -1 and \
                     self.right_col.colliderect(object_list[rcollide_id]) and \
-                    -4 < self.xpos + self.width - (self.width / 2) - collide_x:
-                return self.xpos + self.width - (self.width / 2) - collide_x
-            if rcollide_id != -1 and collide_x <= (1080 / 2) + self.width and \
+                    -4 < self.xpos + (self.width / 2) - collide_x:
+                self.disable_right = True
+                return self.xpos + (self.width / 2) - collide_x
+            if rcollide_id != -1 and collide_x < self.xpos + (self.width / 2) and \
                     self.right_col.colliderect(object_list[rcollide_id]) and \
-                    collide_y < self.ypos + self.height and \
-                    self.ypos < collide_y + collide_height:
+                    collide_y < self.ypos + (self.height / 2) and \
+                    self.ypos - (self.height / 2) < collide_y + collide_height:
                 self.disable_right = True
 
         if 0 < len(all_xr):
@@ -794,11 +778,11 @@ class Player:
 
         if self.enable_gravity and not self.jump_ability:
             if self.grav_y is not None and \
-                    self.grav_y < gravity_y + (576 / 2) + self.height:
+                    self.grav_y < gravity_y + self.ypos + (self.height / 2):
                 self.enable_gravity = False
                 self.jump_ability = True
                 self.gravity_counter = self.max_gravity
-                gravity_y = (576 / 2) - (self.grav_y - self.height)
+                gravity_y = self.ypos + (self.height / 2) - (self.grav_y)
         if 0 < gravity_y:
             return gravity_y * -1
         elif gravity_y < 0:
@@ -909,6 +893,8 @@ if __name__ == "__main__":
     game_width = 1080
     game_height = 576
 
+    pygame.display.set_mode([game_width, game_height])
+
     file_path = "put_icon_file_path_here"
     """pygame.display.set_caption("display_window") # game window caption
     icon = pygame.image.load(file_path + "file_image_name") # loading image
@@ -918,8 +904,8 @@ if __name__ == "__main__":
     pygame.display.set_icon(icon) # game window icon"""
 
     start_game = Program()  # Initialize running the game with Program
-    start_scene = PlayLevel((game_width + 10) / 2,
-                            (game_height + 10) / 2,
+    start_scene = PlayLevel(game_width / 2,
+                            game_height / 2,
                             game_width / 1080, game_height / 576)
     # Initialize the first scene/starting scene shown to the player
     start_game.run(game_width, game_height, start_scene)  # Run the game loop
