@@ -1,4 +1,3 @@
-
 import pygame
 import random
 import math
@@ -261,6 +260,7 @@ class PlayLevel(Scene):
         self.death_zones = []  # All deaths for that level (death condition)
         self.win_zones = []  # All win areas for that level (win condition)
         self.respawn_zones = []  # Respawn area for the player
+        self.invis_rect = pygame.Rect(x_spawn, y_spawn, 1, 1)   # rect comparing player position
 
         # Render these objects
         self.render_objects = self.platforms + self.death_zones + \
@@ -311,9 +311,13 @@ class PlayLevel(Scene):
     def input(self, pressed, held):
         for every_key in pressed:
             # Player movement bound to the middle of the screen
-            if every_key is pygame.K_a and not self.player.disable_left:
+            if every_key is pygame.K_a and not self.player.disable_left and \
+                    not self.player.freeze and \
+                    self.player.alive:
                 self.update_plat_x(self.player.smart_left(self.platforms))
-            if every_key is pygame.K_d and not self.player.disable_right:
+            if every_key is pygame.K_d and not self.player.disable_right and \
+                    not self.player.freeze and \
+                    self.player.alive:
                 self.update_plat_x(self.player.smart_right(self.platforms))
 
             # Pressing/tapping and not holding jump key to jump
@@ -366,12 +370,14 @@ class PlayLevel(Scene):
 
         if held[pygame.K_a] and \
                 10 < pygame.time.get_ticks() - self.held_delay and \
-                not self.player.disable_left:
+                not self.player.disable_left and not self.player.freeze and \
+                self.player.alive:
             self.update_plat_x(self.player.smart_left(self.platforms))
             self.held_delay = pygame.time.get_ticks()
         if held[pygame.K_d] and \
                 10 < pygame.time.get_ticks() - self.held_delay and \
-                not self.player.disable_right:
+                not self.player.disable_right and not self.player.freeze and \
+                self.player.alive:
             self.update_plat_x(self.player.smart_right(self.platforms))
             self.held_delay = pygame.time.get_ticks()
 
@@ -403,9 +409,11 @@ class PlayLevel(Scene):
             self.player.ypos = self.y_spawn
 
         # If player is below the level, count as a death (out of bounds)
-        if (576 * self.res_height) + self.player.height < self.player.ypos:
+        if self.invis_rect.y < -50:
             self.player.alive = False
             self.deaths += 1
+            self.update_plat_x(self.x_spawn - self.invis_rect.x)
+            self.update_plat_y(self.y_spawn - self.invis_rect.y)
 
         # Check for win collision
         if self.player.alive and \
@@ -438,10 +446,12 @@ class PlayLevel(Scene):
         self.render_text(screen)
 
     def update_plat_x(self, move_x):
+        self.invis_rect.x += move_x
         for plat in self.platforms:
             plat.x += move_x
 
     def update_plat_y(self, move_y):
+        self.invis_rect.y += move_y
         if move_y is not None:
             for plat in self.platforms:
                 plat.y += move_y
@@ -491,8 +501,8 @@ class Player:
         """
         self.xpos = x_spawn  # Current x_position, initialized as spawn
         self.ypos = y_spawn  # Current y_position, initialized as spawn
-        self.width = 48 # Current width, always 10
-        self.height = 48  # Current height, always 10
+        self.width = width # Current width
+        self.height = height  # Current height
         self.color = rgb  # Color of player as static constant or tuple
         self.square_render = pygame.Rect(((1080 / 2)) * res_width,
                                          (576 / 2) * res_height,
@@ -579,6 +589,9 @@ class Player:
     def jump(self):
         # Jump that will change the player's y position in the game loop
         # print(self.jump_ability, self.jump_boost)
+        if not self.alive:
+            return 0
+
         if self.jump_ability and 0 <= self.jump_boost:
             jump_factor = ((self.jump_boost ** 2) * 0.004)
             if self.jump_y is not None and \
@@ -662,9 +675,9 @@ class Player:
                 all_yheight += [collide_y + collide_height]
 
             if (self.square_render.colliderect(object_list[tcollide_id]) or
-                (self.ypos - (self.height / 2) == collide_y + collide_height) and \
-                    self.top_col.colliderect(object_list[tcollide_id]) and not \
-                    self.left_col.colliderect(object_list[tcollide_id]) and \
+                (self.ypos - (self.height / 2) == collide_y + collide_height) and
+                    self.top_col.colliderect(object_list[tcollide_id]) and not
+                    self.left_col.colliderect(object_list[tcollide_id]) and
                     not self.right_col.colliderect(object_list[tcollide_id])):
                 self.jump_ability = False
                 self.jump_boost = -1
@@ -763,8 +776,8 @@ class Player:
         return -4
 
     def gravity(self):
-        # fix turning off gravity
         if not self.alive:
+            self.gravity_counter = self.max_gravity
             return 0
 
         if self.enable_gravity and not self.jump_ability:
