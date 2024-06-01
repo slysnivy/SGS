@@ -104,9 +104,6 @@ class Music:
         pygame.mixer.music.set_volume(self.max_vol)  # Set to max for now
         # pygame.mixer.music.play(-1)   # Start with this song and play forever
 
-        self.music_text = Text("PLAYING: " +
-                               str(self.music_tracks[self.current_track_index]),
-                               (1080 / 2, 556), 20, "impact", WHITE, None)
         self.text_timer = pygame.time.get_ticks()
         # Display what's currently playing
 
@@ -119,11 +116,6 @@ class Music:
         self.current_track_index = random.randint(1, len(self.music_tracks) - 2)
         # Set the boundaries between 2nd/1 and 2nd last/len - 2 to avoid
         # main menu and credits
-
-        # Update the music display text
-        self.music_text = Text("PLAYING: " +
-                               str(self.music_tracks[self.current_track_index]),
-                               (1080 / 2, 556), 20, "impact", WHITE, None)
 
         # Load the selected track
         pygame.mixer.music.load(self.file_path +
@@ -143,11 +135,6 @@ class Music:
 
         # Update the current track index
         self.current_track_index = track_num
-
-        # Update the music display text
-        self.music_text = Text("PLAYING: " +
-                               str(self.music_tracks[self.current_track_index]),
-                               (1080 / 2, 556), 20, "impact", WHITE, None)
 
         # Load the selected track
         pygame.mixer.music.load(self.file_path +
@@ -265,8 +252,8 @@ class PlayLevel(Scene):
         # Render these objects
         self.render_objects = self.platforms + self.death_zones + \
                               self.win_zones + self.respawn_zones
-        self.x_spawn = x_spawn * width  # x player spawn
-        self.y_spawn = y_spawn * height  # y player spawn
+        self.x_spawn = x_spawn  # x player spawn
+        self.y_spawn = y_spawn  # y player spawn
         self.player = Player(self.x_spawn, self.y_spawn,
                              10, 10, PURPLE,
                              width,
@@ -281,23 +268,18 @@ class PlayLevel(Scene):
 
         # Text displayed when winning (touch the win_zones), uses time/counter
 
-        self.pause_text = Text("PAUSED", (540, 213),
+        self.pause_text = Text("PAUSED", (width / 2, 1 * (height / 10)),
                                100, "impact", DARK_RED, None)
-        self.pause_text.scale(width, height)
-        self.pause_text_2 = Text("Press esc to unpause", (540, 280),
+        self.pause_text_2 = Text("Press esc to unpause", (width / 2, 3 * (height / 10)),
                                  30, "impact", DARK_RED, None)
-        self.pause_text_2.scale(width, height)
-        self.pause_text_3 = Text("Press q to quit", (540, 315),
+        self.pause_text_3 = Text("Press q to quit", (width / 2, 5 * (height / 10)),
                                  30, "impact", DARK_RED, None)
-        self.pause_text_3.scale(width, height)
         self.pause_text_4 = Text("Press b to return to menu",
-                                 (540, 350), 30,
+                                 (width / 2, 7 * (height / 10)), 30,
                                  "impact", DARK_RED, None)
-        self.pause_text_4.scale(width, height)
         self.pause_text_5 = Text("Press r to restart the level",
-                                 (540, 385), 30,
+                                 (width / 2, 9 * (height / 10)), 30,
                                  "impact", DARK_RED, None)
-        self.pause_text_5.scale(width, height)
         # Text displayed when player pauses the game (ESC)
 
         # Timer used to delay player jump
@@ -501,14 +483,14 @@ class Player:
         """
         self.xpos = x_spawn  # Current x_position, initialized as spawn
         self.ypos = y_spawn  # Current y_position, initialized as spawn
-        self.width = width # Current width
+        self.width = width  # Current width
         self.height = height  # Current height
         self.color = rgb  # Color of player as static constant or tuple
-        self.square_render = pygame.Rect(((1080 / 2)) * res_width,
-                                         (576 / 2) * res_height,
+        self.square_render = pygame.Rect(res_width / 2, res_height / 2,
                                          self.width,
                                          self.height)  # Rect of the player
         self.square_render.center = (self.xpos, self.ypos)
+
         self.alive = False  # If the player is alive (able to move)
         self.freeze = False  # If the player is forced to pause
 
@@ -595,7 +577,7 @@ class Player:
         if self.jump_ability and 0 <= self.jump_boost:
             jump_factor = ((self.jump_boost ** 2) * 0.004)
             if self.jump_y is not None and \
-                    (576 / 2) - self.jump_y < jump_factor:
+                    (self.res_width / 2) - self.jump_y < jump_factor:
                 self.jump_ability = False
                 self.jump_boost = -1
                 self.enable_gravity = True
@@ -606,7 +588,7 @@ class Player:
                 self.jump_boost -= 2
                 """Decrease the counter until it reaches 0
                 This is used to create the first arc of the jump"""
-                return jump_factor * self.res_height
+                return jump_factor
         else:
             """Crucial for the second half of the jump, 
             allowing the player to fall"""
@@ -782,7 +764,7 @@ class Player:
 
         if self.enable_gravity and not self.jump_ability:
             gravity_y = ((self.gravity_counter ** 2) *
-                         0.00015) * self.res_height
+                         0.00015)
         else:
             gravity_y = 0
 
@@ -919,7 +901,7 @@ if __name__ == "__main__":
     start_game = Program()  # Initialize running the game with Program
     start_scene = PlayLevel(game_width / 2,
                             game_height / 2,
-                            game_width / 1080, game_height / 576)
+                            game_width, game_height)
     # Initialize the first scene/starting scene shown to the player
     start_game.run(game_width, game_height, start_scene)  # Run the game loop
     """The game loop will be stuck at this line (start_game.run) until the
