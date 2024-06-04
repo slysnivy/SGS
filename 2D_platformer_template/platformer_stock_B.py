@@ -548,6 +548,7 @@ class Player:
 
         self.disable_left = False
         self.disable_right = False
+        self.corner_flag = False
 
     def update_detection(self):
         """
@@ -617,6 +618,7 @@ class Player:
         the ground or in the air)
         """
         all_y = []
+        self.corner_flag = False
         self.enable_gravity = True
         for bcollide_id in bot_collisions:
             collide_y = object_list[bcollide_id].y
@@ -635,6 +637,12 @@ class Player:
                 self.enable_gravity = False
                 self.jump_ability = True
                 self.gravity_counter = self.max_gravity
+
+            # Corner Detection
+            if self.bot_col.colliderect(object_list[bcollide_id]) and \
+                    (self.left_col.colliderect(object_list[bcollide_id]) or
+                     self.right_col.colliderect(object_list[bcollide_id])):
+                self.corner_flag = True
 
         if 0 < len(all_y):
             self.grav_y = min(all_y)
@@ -761,6 +769,13 @@ class Player:
         if not self.alive:
             self.gravity_counter = self.max_gravity
             return 0
+
+        if self.corner_flag:
+            # set return for 0 for potential corner grab
+            self.enable_gravity = False
+            self.jump_ability = True
+            self.gravity_counter = self.max_gravity
+            return 1
 
         if self.enable_gravity and not self.jump_ability:
             gravity_y = ((self.gravity_counter ** 2) *
