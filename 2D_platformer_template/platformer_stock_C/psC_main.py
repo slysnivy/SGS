@@ -161,6 +161,10 @@ class Music:
 
 
 class Image:
+    """
+    Import images from a specific folder path ("game_files/psC_imgs" by default).
+        See the Memory class for specific steps in file naming and to use the Image class.
+    """
     def __init__(self, folder, asset_name, x, y, img_width, img_height, img_id):
         self.img = pygame.image.load(folder + "/" + asset_name).convert_alpha()
         self.img_x = x
@@ -169,70 +173,94 @@ class Image:
         self.img_height = img_height
         self.img_id = img_id
 
-        self.render_id = 0
+        self.render_id = 0    # Type 0 visual for images
 
     def get_width(self):
+        # Get width from image directly
         return self.img.get_width()
 
     def get_height(self):
+        # Get height from image directly
         return self.img.get_height()
 
 
 class Animate(Image):
+    """
+    Import a sprite sheet from a specific folder path ("game_files/psC_ani" by default).
+        A spritesheet is a collection of images set in a series of rows and columns under one image file.
+        Each section of the image in an animation must have the same width and height.
+        For example, an ani file of 64 x 64 must have 16 x 16 images for 4 frames of animation
 
+        
+        See the Memory class for specific steps in file naming and to use the Animate class.
+    """
     def __init__(self, file, asset_path, frame_delay, x, y, img_width, img_height, ani_id):
         Image.__init__(self, file, asset_path, x, y, img_width, img_height,
-                       ani_id)
+                       ani_id)    # Initialize sprite sheet as an image
+        
+        self.img_rows = self.img.get_width() // self.img_width        # Total width / width of one image
+        self.img_columns = self.img.get_height() // self.img_height    # Total height / height of one image
 
-        self.img_rows = self.img.get_width() // self.img_width
-        self.img_columns = self.img.get_height() // self.img_height
+        self.img_frames = []    # Store animation frames as individual images
 
-        self.img_frames = []
+        self.frame_delay = frame_delay    # Time to switch the frames
+        self.frame_time = 0    # Timer for changing the frames
 
-        self.frame_delay = frame_delay
-        self.frame_time = 0
+        self.len = 0        # Amount of frames
 
-        self.len = 0
-
-        self.ani_id = ani_id
-        self.render_id = 1
+        self.ani_id = ani_id   
+        self.render_id = 1    # Type 1 visual for animations
 
         for y in range(self.img_columns):
             for x in range(self.img_rows):
+                # Get the rectangle area of one frame in the spritesheet
                 img_rect = pygame.Rect(x * self.img_width,
                                        y * self.img_height,
                                        self.img_width,
                                        self.img_height)
                 img_rect.center = (self.img_x, self.img_y)
+
+                # Cut the image out using the rectangle dimensions and location
                 self.img.set_clip(pygame.Rect(x * self.img_width,
                                               y * self.img_height,
                                               self.img_width,
                                               self.img_height))
+
+                # Add the rectangle to our set of frames
                 self.img_frames += [
                     self.img.subsurface(self.img.get_clip())]
+
+                # Get the length
                 self.len += 1
 
         self.img_index = random.randint(0, self.len - 1)
 
     def update_render(self):
+        # Change the frame if the time elapsed is greater than the set interval
         if self.frame_delay < pygame.time.get_ticks() - self.frame_time:
-            self.change_frame()
-            self.frame_time = pygame.time.get_ticks()
+            self.change_frame()       
+            self.frame_time = pygame.time.get_ticks()    # Reset timer
 
     def change_frame(self):
+        # Change the next frame to the next index, or the first index if at the last frame in self.img_frames
         if self.img_index < self.len - 1:
             self.img_index += 1
         else:
             self.img_index = 0
 
     def render(self, screen, rect):
+        # Render the current frame on a specific rectangle
         screen.blit(self.img_frames[self.img_index], rect)
 
 
 class Background(Animate):
+    """
+    Import a sprite sheet for a background from a specific folder path ("game_files/psC_bg" by default).
+        This class adds onto Animate by having transparency, rendered first (put to the back), and parallax movement.
+    """
     def __init__(self, file, asset_path, frame_delay, transparency, pf, x, y, img_width, img_height, bg_id):
         Animate.__init__(self, file, asset_path, frame_delay, x, y, img_width, img_height, bg_id)
-
+        
         self.bg_id = bg_id
         self.transparency = transparency
 
@@ -243,7 +271,7 @@ class Background(Animate):
         self.parallax_y = 0
         self.y_offset = 0
 
-        # How many in game units would it take to scroll the background
+        # How many in game units would it take to scroll the background with respect to player movement
         self.parallax_factor = pf
 
     def set_transparency(self):
@@ -251,7 +279,8 @@ class Background(Animate):
             each_frame.set_alpha(self.transparency)
 
     def bg_pos_x(self, move_x):
-        self.parallax_x += move_x
+        self.parallax_x += move_x    # Add player movement to horizontal counter
+        # When the horizontal counter is more than the set factor, move the background by 1 unit
         if self.parallax_factor < self.parallax_x:
             self.x_offset += 1
             self.parallax_x = 0
@@ -260,7 +289,8 @@ class Background(Animate):
             self.parallax_x = 0
 
     def bg_pos_y(self, move_y):
-        self.parallax_y += move_y
+        self.parallax_y += move_y    # Add player movement to vertical counter
+        # When the vertical counter is more than the set factor, move the background by 1 unit
         if self.parallax_factor < self.parallax_y:
             self.y_offset += 1
             self.parallax_y = 0
@@ -280,6 +310,7 @@ class Background(Animate):
             self.img_index = 0
 
     def render(self, screen, pos):
+        # Render the background with the offset
         screen.blit(self.img_frames[self.img_index], (pos[0] + self.x_offset,
                                                       pos[1] + self.y_offset))
 
@@ -410,6 +441,7 @@ class Memory:
         self.loaded = foo_list
 
     def decompile_rect(self):
+        """ Converts a list containing rect parameters into a list of pygame Rect objects"""
         if self.loaded is None or len(self.loaded) < 1:
             self.loaded = []
             return None
@@ -499,24 +531,22 @@ class Scene:
 
 
 class PlayLevel(Scene):
-
+    """
+    Class to play or start the platformer, using information from the game_files folder path
+    """
+    
     def __init__(self, x_spawn, y_spawn, width, height, lv_id):
-        """
-        Set the current scene to this scene by passing this classes self to
-        initialize it.
-        """
-        Scene.__init__(self)
+        Scene.__init__(self)    # Initialize basic scene functionality (changing/ending scene)
         # Put pygame objects that need rendering into here
         self.platforms = []  # All platforms for that level (collision)
         self.death_zones = []  # All deaths for that level (death condition)
         self.win_zones = []  # All win areas for that level (win condition)
         self.respawn_zones = []  # Respawn area for the player
+        self.decorations = []    # Visual objects with no interactivity
+        
         self.invis_rect = pygame.Rect(x_spawn, y_spawn, 1, 1)   # rect comparing player position
         self.invis_rect.center = (x_spawn, y_spawn)
 
-        # Render these objects
-        self.render_objects = self.platforms + self.death_zones + \
-                              self.win_zones + self.respawn_zones
         self.x_spawn = x_spawn  # x player spawn
         self.y_spawn = y_spawn  # y player spawn
         self.player = Player(self.x_spawn, self.y_spawn,
@@ -533,8 +563,6 @@ class PlayLevel(Scene):
         self.deaths = 0  # Recorded deaths for that level instance
         self.play_time = 0  # Time accumulated in that level
         self.level_condition = False  # Check if player has won (touch win)
-
-        # Text displayed when winning (touch the win_zones), uses time/counter
 
         self.pause_text = Text("PAUSED", (width / 2, 1 * (height / 10)),
                                100, "impact", DARK_RED, None)
@@ -553,11 +581,13 @@ class PlayLevel(Scene):
         # Timer used to delay player jump
         self.jump_timer = pygame.time.get_ticks()
 
-        self.res_height = height
-        self.res_width = width
+        self.res_height = height    # Game window height resolution
+        self.res_width = width    # Game window width resolution
 
-        self.held_delay = pygame.time.get_ticks()
+        self.held_delay = pygame.time.get_ticks()    # Delay between inputs when keyboard is held
 
+        # Load in game objects and images with Memory class
+        
         self.memory_win_warp = Memory()
         self.memory_win_warp.default_load("game_files/game_data/lv_" + str(self.level_id) + "/", "save_level")
         self.level_memory = self.memory_win_warp.loaded
@@ -606,6 +636,8 @@ class PlayLevel(Scene):
         self.memory_bg_id.default_load("game_files/game_data/lv_" + str(self.level_id) + "/",
                                         "save_bg")
 
+        # Check if current files are absent, and make empty assets if so.
+        
         if not self.memory_bg or not self.memory_bg_id.loaded:
             self.scene_bg = self.memory_bg.loaded[0]
         else:
