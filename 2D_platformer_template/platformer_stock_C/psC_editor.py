@@ -588,13 +588,13 @@ class BaseLevel(Scene):
         self.decorations = self.memory_decor.loaded
 
         self.memory_img = Memory()
-        self.memory_img.load_image("game_files/psB_imgs")
+        self.memory_img.load_image("game_files/psC_imgs")
 
         self.memory_ani = Memory()
-        self.memory_ani.load_animation("game_files/psB_ani")
+        self.memory_ani.load_animation("game_files/psC_ani")
 
         self.memory_bg = Memory()
-        self.memory_bg.load_bg("game_files/psB_bg")
+        self.memory_bg.load_bg("game_files/psC_bg")
 
         self.memory_asset_id = Memory()
         self.memory_asset_id.default_load("game_files/game_data/lv_" + str(self.level_id) + "/",
