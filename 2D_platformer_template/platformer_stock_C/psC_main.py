@@ -937,10 +937,11 @@ class Player:
         self.jumps = 0  # Amount of jumps the player had done (remove)
         self.jump_ability = False  # If the player is able to jump
         self.enable_gravity = True  # If gravity is acting on the player
-        self.max_jump = 50  # Limit for the jump loop to iterate
+        self.max_jump = 50  # CHANGE: Limit for the jump loop to iterate
         self.jump_boost = -1 * (self.max_jump - 1)  # Counter for jump loop
-        self.max_gravity = 95  # Limit for the gravity loop to iterate
+        self.max_gravity = 95  # CHANGE: Limit for the gravity loop to iterate
         self.gravity_counter = self.max_gravity  # Counter for gravity loop
+        self.speed = 4    # CHANGE: Player horizontal speed
 
         asset_path = "assets/"
         # self.jump_sound_1 = pygame.mixer.Sound(sound_path + "jump_file")
@@ -949,7 +950,7 @@ class Player:
         # Jump volume for the player, set at 0.1 out of 1, or 10%
 
         # Get location and info of surrounding blocks
-        self.size_factor = 5    # Increase to have better detection
+        self.size_factor = 5    # CHANGE: Increase to have better detection
         self.collide_rect = pygame.Rect(self.xpos - self.width,
                                         self.ypos - self.height,
                                         self.width * 3 * self.size_factor,
@@ -1161,7 +1162,7 @@ class Player:
             if lcollide_id != -1 and \
                     self.left_col.colliderect(object_list[lcollide_id]) and \
                     ((collide_x + collide_width) -
-                     (self.xpos - (self.width / 2))) * -1 < 4:
+                     (self.xpos - (self.width / 2))) * -1 < self.speed:
                 self.disable_left = True
                 # Player will travel the smaller distance, or the gap between
                 return ((collide_x + collide_width) -
@@ -1179,7 +1180,7 @@ class Player:
         else:
             self.left_x = None
 
-        return 4
+        return self.speed
 
     def right_collision(self, object_list, right_collision):
         all_xr = []
@@ -1199,7 +1200,7 @@ class Player:
             # Check if the distance travelled is more than the distance between rect and player 
             if rcollide_id != -1 and \
                     self.right_col.colliderect(object_list[rcollide_id]) and \
-                    -4 < self.xpos + (self.width / 2) - collide_x:
+                    -1 * self.speed < self.xpos + (self.width / 2) - collide_x:
                 self.disable_right = True
                 return self.xpos + (self.width / 2) - collide_x
             # Failsafe if the player has already collided
@@ -1215,7 +1216,7 @@ class Player:
         else:
             self.right_x = None
 
-        return -4
+        return -1 * self.speed
 
     def gravity(self):
         if not self.alive:
