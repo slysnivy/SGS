@@ -680,6 +680,7 @@ class BaseLevel(Scene):
         pass
 
     def update(self):
+        # Altered in the child class
         pass
 
     def victory(self, screen):
@@ -695,31 +696,37 @@ class BaseLevel(Scene):
         self.render_text(screen)
 
     def update_plat_x(self, move_x):
+        # Move the reference rect marker in the x-axis
         self.invis_rect.x += move_x
         for plat in self.platforms + self.win_zones + \
                 self.death_zones + self.respawn_zones + \
                 self.decorations:
-            plat.x += move_x
+            plat.x += move_x    # Apply horizontal movement to each platform
 
     def update_plat_y(self, move_y):
         if move_y is not None:
+            # Move the reference rect marker in the y-axis
             self.invis_rect.y += int(move_y)
             for plat in self.platforms + self.win_zones + \
                     self.death_zones + self.respawn_zones + \
                     self.decorations:
-                plat.y += int(move_y)
+                plat.y += int(move_y)    # Apply vertical movement to each platform
 
     def render_level(self, screen):
         """ This function will be altered in the child class"""
         for each_id in self.element:
+            # Get index of each type of level object
             for obj_ind in range(len(self.element[each_id])):
+                # Refer to each object in each type individually
                 plat = self.element[each_id][obj_ind]
+                # If the platform is within screen bounds, then render
                 if (0 <= plat.x + plat.width <= game_width or
                     0 <= plat.x <= game_width) and \
                         (0 <= plat.y + plat.height <= game_height or
                          0 <= plat.y <= game_height):
                     render_id = self.memory_asset_id.loaded[each_id][obj_ind]
                     render_type = self.memory_asset_type.loaded[each_id][obj_ind]
+                    # Check if the object is animated for altered rendering
                     if render_type == 0:
                         screen.blit(self.memory_img.loaded[render_id].img, plat)
                     else:
@@ -727,7 +734,8 @@ class BaseLevel(Scene):
                         self.memory_ani.loaded[render_id].render(screen, plat)
 
     def render_text(self, screen):
-        """ Use this function to render important text for levels"""
+        """ Use this function to render important text for levels
+        This function is outdated!"""
         self.player.render(screen)
 
         if self.player.freeze:
@@ -745,6 +753,7 @@ class BaseLevel(Scene):
                         self.pause_text_5.text_rect)
 
     def render_bg(self, screen):
+        # Render the background as white by default, or animated if found
         screen.fill(WHITE)
         if 0 <= len(self.memory_bg_id.loaded):
             self.scene_bg.update_render()
@@ -752,6 +761,7 @@ class BaseLevel(Scene):
                                           (self.res_height - self.scene_bg.img_height) / 2))
 
     def reload(self):
+        # Reset the current scene
         self.change_scene(PlayLevel(self.x_spawn, self.y_spawn,
                                     self.res_width, self.res_height, self.level_id))
 
@@ -826,21 +836,22 @@ class PlayLevel(BaseLevel):
             self.player.jumps += 1  # Add to a jump counter
             self.jump_timer = pygame.time.get_ticks()  # Reset jump timer
 
+        # Held controls for left and right movement
         if held[pygame.K_a] and \
                 10 < pygame.time.get_ticks() - self.held_delay and \
                 not self.player.disable_left and not self.player.freeze and \
                 self.player.alive:
-            move_left = self.player.smart_left(self.platforms)
-            self.update_plat_x(move_left)
-            self.scene_bg.bg_pos_x(move_left)
+            move_left = self.player.smart_left(self.platforms)    # Collision Logic for platforms going left
+            self.update_plat_x(move_left)    # Move every object left, depending on collision
+            self.scene_bg.bg_pos_x(move_left)    # Move background left, at an altered rate
             self.held_delay = pygame.time.get_ticks()
         if held[pygame.K_d] and \
                 10 < pygame.time.get_ticks() - self.held_delay and \
                 not self.player.disable_right and not self.player.freeze and \
                 self.player.alive:
-            move_right = self.player.smart_right(self.platforms)
-            self.update_plat_x(move_right)
-            self.scene_bg.bg_pos_x(move_right)
+            move_right = self.player.smart_right(self.platforms)    # Collision Logic for platforms going right
+            self.update_plat_x(move_right)    # Move every object right, depending on collision
+            self.scene_bg.bg_pos_x(move_right)    Move background right, at an altered rate
             self.held_delay = pygame.time.get_ticks()
 
     def update(self):
@@ -848,13 +859,13 @@ class PlayLevel(BaseLevel):
         if self.player.square_render is None:
             return None  # Player is not rendered, skip function
 
-        grav_y = self.player.gravity()
-        self.update_plat_y(grav_y)
-        self.scene_bg.bg_pos_y(grav_y)
+        grav_y = self.player.gravity() # Calculate gravity (how many y down, positive)
+        self.update_plat_y(grav_y)    # Apply some number of y from gravity
+        self.scene_bg.bg_pos_y(grav_y)    # Apply some number of y, at an altered rate
 
-        jump_y = self.player.jump()
-        self.update_plat_y(jump_y)
-        self.scene_bg.bg_pos_y(jump_y)
+        jump_y = self.player.jump()    # Calculate jump (how many y up, negative) if pressed
+        self.update_plat_y(jump_y)    # Apply some number of y from jump
+        self.scene_bg.bg_pos_y(jump_y)    # Apply some number of y, at an altered rate
 
         # Player is alive, not paused and haven't run, then check collision
         if self.player.alive and not self.player.freeze and \
@@ -862,7 +873,7 @@ class PlayLevel(BaseLevel):
             # Check if player collided with death zones (returns 1 or 0)
             if 0 < self.player.death(self.death_zones):
                 self.deaths += 1
-                self.reload()
+                self.reload() # Reload the current scene if player loses
             else:
                 self.player.collision_plat(self.platforms)  # Top and bottom coll
                 self.player.collision_wall(self.platforms)
@@ -906,8 +917,8 @@ class PlayLevel(BaseLevel):
 class EditLevel(BaseLevel):
     def __init__(self, x_spawn, y_spawn, width, height, lv_id):
         BaseLevel.__init__(self, x_spawn, y_spawn, width, height, lv_id)
-        self.place_id = 0
-        self.place_type = 0
+        self.place_id = 0        # Level element behaviour (plat, win, lose)
+        self.place_type = 0    # Visual change
 
         self.element_color = {
             0: BLACK,
@@ -917,37 +928,43 @@ class EditLevel(BaseLevel):
             4: YELLOW
         }
 
-        self.img_id = 0
-        self.bg_id = 0
-        self.win_id = 0
+        self.img_id = 0    # If the curent block is static or animated
+        self.bg_id = 0    # ID for current background
+        self.win_id = 0    # Current level warp identifier
 
         self.current_element = pygame.Rect(self.x_spawn, self.y_spawn,
                                            self.memory_img.loaded[
                                                self.img_id].img_width,
                                            self.memory_img.loaded[
                                                self.img_id].img_height)
+        # Current level object
 
         self.move_mode = {
             0: self.normal_input,
             1: self.snap_input,
             2: self.precise_input
         }
+        # How WASD changes the position of the current element
 
         self.held_mode = {
             0: self.normal_held,
             1: self.snap_held,
             2: self.precise_held
         }
+        # How holding WASD changes the position of the current element
 
-        self.move_switch = 0
+        self.move_switch = 0    # Which WASD movement type is used
 
         self.del_mode = False
+        # If spacebar should delete the block (MUST MATCH PLACE_ID)
 
     def input(self, pressed, held):
+        # Check if movement type in our modes
         if self.move_switch in self.held_mode:
             self.move_mode[self.move_switch](pressed)
 
         for every_key in pressed:
+            # Press ESCAPE to save editing progress
             if every_key is pygame.K_ESCAPE:
                 self.memory_win_warp.default_save("game_files/game_data/lv_" + str(self.level_id) + "/",
                                             "save_level")
@@ -971,12 +988,14 @@ class EditLevel(BaseLevel):
                                             self.y_spawn,
                                             self.res_width,
                                             self.res_height, self.level_id))
+            # Press only SPACE to place the current element into the level
             if every_key is pygame.K_SPACE and not self.del_mode:
                 self.element[self.place_id] += [
                     pygame.Rect(self.current_element.x,
                                 self.current_element.y,
                                 self.current_element.width,
                                 self.current_element.height)]
+                # Add the static or animated image(s)
                 if self.place_type == 0:
                     self.memory_asset_id.loaded[self.place_id] += \
                         [self.memory_img.loaded[self.img_id].img_id]
@@ -987,12 +1006,16 @@ class EditLevel(BaseLevel):
                         [self.memory_ani.loaded[self.img_id].ani_id]
                     self.memory_asset_type.loaded[self.place_id] += \
                         [self.memory_ani.loaded[self.img_id].render_id]
+                # If there's an associated level warp when touched (win_zone)
                 if self.place_id == 1:
                     self.memory_win_warp.loaded += [int(self.win_id)]
 
+            # If SPACE and deletion (hold LEFT SHIFT) are pressed
             elif every_key is pygame.K_SPACE and self.del_mode:
+                # Find the overlapping level element with our current one
                 find_index = self.current_element.collidelist(
                     self.element[self.place_id])
+                # If our selector/current element is on the one we want to delete
                 if -1 < find_index:
                     del self.element[self.place_id][find_index]
                     del self.memory_asset_type.loaded[self.place_id][find_index]
@@ -1000,54 +1023,70 @@ class EditLevel(BaseLevel):
                     if self.place_id == 1:
                         del self.memory_win_warp.loaded[find_index]
 
+            # Change what behaviour the current element has
             if every_key is pygame.K_r:
                 self.place_id += 1
+            # Change how our WASD movement changes
             if every_key is pygame.K_t:
                 self.move_switch += 1
+            # Change between animated and static image sets
             if every_key is pygame.K_q:
                 self.img_id += 1
+                # Static image
                 if self.place_type == 0 and self.img_id < len(self.memory_img.loaded):
                     self.current_element.width = self.memory_img.loaded[
                                 self.img_id].img_width
                     self.current_element.height = self.memory_img.loaded[
                                 self.img_id].img_height
+                # Animated set of images
                 elif self.place_type == 1 and self.img_id < len(self.memory_ani.loaded):
                     self.current_element.width = self.memory_ani.loaded[
                                 self.img_id].img_width
                     self.current_element.height = self.memory_ani.loaded[
                                 self.img_id].img_height
+                    
+            # Change how our current element looks
             if every_key is pygame.K_f:
                 self.place_type += 1
                 self.img_id = 0
+                # Static image
                 if self.place_type == 0 and self.img_id < len(self.memory_img.loaded) - 1:
                     self.current_element.width = self.memory_img.loaded[
                                 self.img_id].img_width
                     self.current_element.height = self.memory_img.loaded[
                                 self.img_id].img_height
+                # Animated set of images
                 elif self.place_type == 1 and self.img_id < len(self.memory_ani.loaded) - 1:
                     self.current_element.width = self.memory_ani.loaded[
                                 self.img_id].img_width
                     self.current_element.height = self.memory_ani.loaded[
                                 self.img_id].img_height
+            # Press B to change the background from the presets
             if every_key is pygame.K_b:
                 self.bg_id += 1
+            # Press "/" to reset the current element's warp id (if applicable)
             if every_key is pygame.K_SLASH:
                 # Reset win warp id
                 self.win_id = ""
+            # Type any number to change your curent warp id (if applicable, or on place_id = 1)
             if 48 <= every_key <= 57:
                 self.win_id = str(self.win_id) + chr(every_key)
+            # If RIGHT ARROW/KEY is pressed, go to the next level
             if every_key == pygame.K_RIGHT:
                 levels = Memory()
                 levels.get_scene("game_files/game_data/")
+                # Go to the next level if present
                 if self.level_id < len(levels.loaded) - 1:
                     self.change_scene(EditLevel(self.x_spawn,
                                                 self.y_spawn,
                                                 self.res_width,
                                                 self.res_height,
                                                 self.level_id + 1))
+                # Make a new level file if there isn't a next level
                 else:
                     os.makedirs("game_files/game_data/lv_" +
                                 str(self.level_id + 1))
+            # Press LEFT ARROW/KEY to go to previous levels
             if every_key == pygame.K_LEFT:
                 levels = Memory()
                 levels.get_scene("game_files/game_data/")
@@ -1058,16 +1097,18 @@ class EditLevel(BaseLevel):
                                                 self.res_height,
                                                 self.level_id - 1))
 
+        # Hold SHIFT to delete elements
         if held[pygame.K_LSHIFT]:
             self.del_mode = True
         else:
             self.del_mode = False
 
+        # HELD WASD behaviour
         if self.move_switch in self.held_mode:
             self.held_mode[self.move_switch](held)
 
     def normal_input(self, pressed: iter):
-        """ Normal input controls
+        """ Normal WASD input controls, current element will move smoothly
         """
         for every_key in pressed:
             if every_key is pygame.K_a and \
@@ -1092,8 +1133,11 @@ class EditLevel(BaseLevel):
                 self.held_delay = pygame.time.get_ticks()
 
     def snap_input(self, pressed: iter):
-        """ Alternate input class that uses the last placed object
-        as an anchor point"""
+        """ Alternate input class that uses the current element position
+        as an anchor point for the next.
+        WASD movement will move with respect to current image height and width.
+        This is useful to stack blocks adjacent to each other.
+        """
         for every_key in pressed:
             if every_key is pygame.K_a:
                 self.update_plat_x(self.current_element.width)
@@ -1113,6 +1157,8 @@ class EditLevel(BaseLevel):
                 self.held_delay = pygame.time.get_ticks()
 
     def precise_input(self, pressed: iter):
+        """ WASD movement will only move 1 unit
+        """
         for every_key in pressed:
             if every_key is pygame.K_a and \
                     10 < pygame.time.get_ticks() - self.held_delay:
@@ -1136,6 +1182,8 @@ class EditLevel(BaseLevel):
                 self.held_delay = pygame.time.get_ticks()
 
     def normal_held(self, held):
+        """ Normal WASD held controls, current element will move smoothly
+        """
         if held[pygame.K_a] and \
                 10 < pygame.time.get_ticks() - self.held_delay:
             self.update_plat_x(3)
@@ -1158,6 +1206,11 @@ class EditLevel(BaseLevel):
             self.held_delay = pygame.time.get_ticks()
 
     def snap_held(self, held):
+        """Alternate held class that uses the current element position
+        as an anchor point for the next.
+        WASD movement will move with respect to current image height and width.
+        This is useful to stack blocks adjacent to each other.
+        """
         if held[pygame.K_a] and \
                 300 < pygame.time.get_ticks() - self.held_delay:
             self.update_plat_x(self.current_element.width)
@@ -1180,6 +1233,8 @@ class EditLevel(BaseLevel):
             self.held_delay = pygame.time.get_ticks()
 
     def precise_held(self, held):
+        """ WASD movement will only move 1 unit
+        """
         if held[pygame.K_a] and \
                 100 < pygame.time.get_ticks() - self.held_delay:
             self.update_plat_x(1)
@@ -1247,9 +1302,14 @@ class EditLevel(BaseLevel):
         BaseLevel.render(self, screen)
 
         for each_id in self.element:
+            # Get the id, or type of element
             for obj_ind in range(len(self.element[each_id])):
+                # Get each individual object for that type
+                
+                # Draw the borders corresponding to type of level element
                 pygame.draw.rect(screen, self.element_color[each_id],
                                  self.element[each_id][obj_ind], 2)
+                # Render the warp id if it's a win_zone/warp_zone
                 if each_id == 1:
                     id_text = Text(str(self.memory_win_warp.loaded[obj_ind]),
                                    (self.element[each_id][obj_ind].x +
@@ -1260,13 +1320,18 @@ class EditLevel(BaseLevel):
                     id_text.render()
                     screen.blit(id_text.text_img, id_text.text_rect)
 
+        # If the current element is has a static or animated image
         if self.place_type == 0:
             screen.blit(self.memory_img.loaded[self.img_id].img,
                         self.current_element)
         elif self.place_type == 1:
             self.memory_ani.loaded[self.img_id].render(screen, self.current_element)
+
+        # Draw the border corresponding to level element type
         pygame.draw.rect(screen, self.element_color[self.place_id],
                          self.current_element, 2)
+
+        # If the current element is a warp/win, display it's associated warp ID
         if self.place_id == 1:
             id_text = Text(str(self.win_id),
                            (self.current_element.x +
@@ -1371,6 +1436,7 @@ class Player:
         # Move horizontally depending on the direction
 
         # Update collision logic position in real time with the player position
+        # This function is outdated!
         pass
 
     def jump(self):
@@ -1426,12 +1492,14 @@ class Player:
         self.enable_gravity = True
         for bcollide_id in bot_collisions:
             collide_y = object_list[bcollide_id].y
+            # Collect the y value of rects directly below the player within the collision box
             if self.ypos + (self.height / 2) < collide_y and \
                     self.bot_col.colliderect(object_list[bcollide_id]) and not \
                     self.left_col.colliderect(object_list[bcollide_id]) and \
                     not self.right_col.colliderect(object_list[bcollide_id]):
                 all_y += [collide_y]
 
+            # If the player is touching a rect below, then disable gravity, enable jump
             if (self.ypos + (self.height / 2) == collide_y or
                 self.square_render.colliderect(object_list[bcollide_id])) and \
                     self.bot_col.colliderect(object_list[bcollide_id]) and not \
@@ -1449,7 +1517,7 @@ class Player:
                 self.corner_flag = True
 
         if 0 < len(all_y):
-            self.grav_y = min(all_y)
+            self.grav_y = min(all_y)    # Change player gravity value
         else:
             self.grav_y = None
 
@@ -1462,6 +1530,7 @@ class Player:
             collide_width = object_list[tcollide_id].width
             collide_height = object_list[tcollide_id].height
 
+            # Check if colliding with only the bottom of the rect above within the collision box
             if self.top_col.colliderect(object_list[tcollide_id]) and not \
                     self.left_col.colliderect(object_list[tcollide_id]) and \
                     not self.right_col.colliderect(object_list[tcollide_id]) \
@@ -1469,6 +1538,7 @@ class Player:
                     self.height / 2):
                 all_yheight += [collide_y + collide_height]
 
+            # Disable jump (even part way) if colliding with it already
             if (self.square_render.colliderect(object_list[tcollide_id]) or
                     (self.ypos - (
                             self.height / 2) == collide_y + collide_height) and
@@ -1479,6 +1549,7 @@ class Player:
                 self.jump_boost = -1
                 self.enable_gravity = True
 
+        # Get the closest rect above, if any
         if 0 < len(all_yheight):
             self.jump_y = max(all_yheight)
         else:
@@ -1488,10 +1559,11 @@ class Player:
         self.disable_left = False
         self.disable_right = False
 
-        # New collision logic:
+        # Get rects to the left and right of rects
         left_collision = self.collide_rect.collidelistall(object_list)
         right_collision = self.collide_rect.collidelistall(object_list)
 
+        # Check distances of all rects to the left and right within the collision box
         self.left_collision(object_list, left_collision)
         self.right_collision(object_list, right_collision)
 
@@ -1505,26 +1577,30 @@ class Player:
 
     def left_collision(self, object_list, left_collision):
         all_xl = []
-        # Left side collision, going left to turn right
+        # Left side collision
         for lcollide_id in left_collision:
             collide_x = object_list[lcollide_id].x
             collide_y = object_list[lcollide_id].y
             collide_width = object_list[lcollide_id].width
             collide_height = object_list[lcollide_id].height
 
+            # Get all rects to the left within collision box
             if self.left_col.colliderect(object_list[lcollide_id]) and \
                     not self.top_col.colliderect(object_list[lcollide_id]) and \
                     not self.bot_col.colliderect(object_list[lcollide_id]) and \
                     collide_x + collide_width < self.xpos - self.width / 2:
                 all_xl += [collide_x + collide_width]
 
+            # Check if the distance travelled is more than the distance between rect and player
             if lcollide_id != -1 and \
                     self.left_col.colliderect(object_list[lcollide_id]) and \
                     ((collide_x + collide_width) -
                      (self.xpos - (self.width / 2))) * -1 < 4:
                 self.disable_left = True
+                # Player will travel the smaller distance, or the gap between
                 return ((collide_x + collide_width) -
                         (self.xpos - (self.width / 2))) * -1
+            # Failsafe to check if the player has already collided
             if lcollide_id != -1 and self.xpos - (
                     self.width / 2) <= collide_x + collide_width and \
                     self.left_col.colliderect(object_list[lcollide_id]) and \
@@ -1541,24 +1617,27 @@ class Player:
 
     def right_collision(self, object_list, right_collision):
         all_xr = []
-        # Right side collision, going right to turn left
+        # Right side collision
         for rcollide_id in right_collision:
             collide_x = object_list[rcollide_id].x
             collide_y = object_list[rcollide_id].y
             collide_width = object_list[rcollide_id].width
             collide_height = object_list[rcollide_id].height
 
+            # Get all rects to the right within collision box
             if self.right_col.colliderect(object_list[rcollide_id]) and \
                     not self.top_col.colliderect(object_list[rcollide_id]) and \
                     not self.bot_col.colliderect(object_list[rcollide_id]) and \
                     self.xpos + (self.width / 2) < collide_x:
                 all_xr += [collide_x]
 
+            # Check if the distance travelled is more than the distance between rect and player
             if rcollide_id != -1 and \
                     self.right_col.colliderect(object_list[rcollide_id]) and \
                     -4 < self.xpos + (self.width / 2) - collide_x:
                 self.disable_right = True
                 return self.xpos + (self.width / 2) - collide_x
+            # Failsafe if the player has already collided
             if rcollide_id != -1 and collide_x < self.xpos + (
                     self.width / 2) and \
                     self.right_col.colliderect(object_list[rcollide_id]) and \
