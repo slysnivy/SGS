@@ -851,7 +851,7 @@ class PlayLevel(BaseLevel):
                 self.player.alive:
             move_right = self.player.smart_right(self.platforms)    # Collision Logic for platforms going right
             self.update_plat_x(move_right)    # Move every object right, depending on collision
-            self.scene_bg.bg_pos_x(move_right)    Move background right, at an altered rate
+            self.scene_bg.bg_pos_x(move_right)    # Move background right, at an altered rate
             self.held_delay = pygame.time.get_ticks()
 
     def update(self):
